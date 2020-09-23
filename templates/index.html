@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+ <link rel="shortcut icon" href="#" />
+  <title>百度地图获取经纬度</title>
+  <!--引用百度地图API-->
+  <style type="text/css">
+      html,body{margin:0;padding:0;}
+      .iw_poi_title {color:#CC5522;font-size:14px;font-weight:bold;overflow:hidden;padding-right:13px;white-space:nowrap}
+      .iw_poi_content {font:12px arial,sans-serif;overflow:visible;padding-top:4px;white-space:-moz-pre-wrap;word-wrap:break-word}
+  </style>
+  <style>
+      #foot {
+          background-color:black;
+          color:white;
+          text-align:center;
+          padding:0px;
+      }
+      #frame{
+          line-height:10px;
+          background-color:#eeeeee;
+          height:600px;
+          width:900px;
+          float:left;
+          padding:0px;
+      }
+      #dituContent {
+          width:900px;
+          float:left;
+          padding:0px;
+      }
+      #nav {
+          float:left;
+          background-color:#A8A8A8;
+          color:black;
+          text-align:center;
+          padding:10px;
+          height:300px;
+          width:480px;
+          border:5px solid white;
+      }
+      #station {
+          float:left;
+          background-color:#A8A8A8;
+          color:black;
+          text-align:center;
+          padding:10px;
+          height:300px;
+          width:350px;
+          border:5px solid white;
+      }
+      #airport {
+          float:left;
+          background-color:#A8A8A8;
+          color:black;
+          text-align:center;
+          padding:10px;
+          height:300px;
+          width:350px;
+          border:5px solid white;
+      }
+      #serial {
+          float:left;
+          background-color:#A8A8A8;
+          color:black;
+          text-align:center;
+          padding:10px;
+          height:300px;
+          width:600px;
+          border:5px solid white;
+      }
+
+  </style>
+  <script src="http://apps.bdimg.com/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script type="text/javascript" src="http://api.map.baidu.com/api?key=&v=1.1&services=true"></script>
+</head>
+
+<body>
+<div id="foot">无人机起落站智能任务系统</div>
+  <div id="frame">
+    <h2 align="center">无人机云台图像</h2>
+    <video id="video" width="1000px" height="550px" controls></video></div>
+  <!--百度地图容器-->
+  <div style="width:1000px;height:600px;border:#ccc solid 1px;" id="dituContent"></div>
+  <div id="station" >
+    <h2>起落站通信</h2>
+     <p>
+        <form action="/recvdata1/" method="get">
+        <p><span id="data">{{status}}</span></p>
+        <button type="button" id="recv1">点击后地面站开始接收起落站数据</button>
+        </form>
+        </p>
+        <hr>
+
+        <p> 数据库功能 </p>
+        <button type="button" class="button"   onclick="show1()">展示所有数据</button>
+        <button type="button" class="button"  onclick="select1()">检索数据</button>
+        <button type="button" class="button"  onclick="newest1()">展示最新数据</button>
+        <hr>
+        <form action="/search1" method="post">
+            {% csrf_token %}
+            <input type="text" name="q">
+            <input type="submit" value="地面站发送数据给起落站">
+        </form>
+
+        <p>已发送数据为 {{ rlt1 }}</p>
+  </div>
+  <div id="airport" >
+    <h2>无人机通信</h2>
+     <p>
+        <form action="/recvdata2/" method="get">
+        <p><span id="data1">{{status}}</span></p>
+        <button type="button" id="recv2">点击后地面站开始接收无人机数据</button>
+        </form>
+        </p>
+        <hr>
+
+        <p> 数据库功能 </p>
+        <button type="button" class="button"   onclick="show2()">展示所有数据</button>
+        <button type="button" class="button"  onclick="select2()">检索数据</button>
+        <button type="button" class="button"  onclick="newest2()">展示最新数据</button>
+
+        <hr>
+        <form action="/search2" method="post">
+            {% csrf_token %}
+            <input type="text" name="p">
+            <input type="submit" value="地面站发送数据给无人机">
+        </form>
+
+        <p>已发送数据为 {{ rlt2 }}</p>
+  </div>
+
+  <div id="serial">
+    <form action="/serial" method="post">
+        {% csrf_token %}
+        <h3>地面站-无人机通讯</h3>
+        无人机地址 <input type="text" name="host1" value="127.0.0.1">
+        无人机端口 <input type="text" name="port1" value="8100"><br>
+        地面站地址 <input type="text" name="host2" value="127.0.0.1">
+        地面站端口 <input type="text" name="port2" value="8200"><br>
+        <h3>地面站-起落站通讯</h3>
+        起落站地址 <input type="text" name="host3" value="127.0.0.1">
+        起落站端口 <input type="text" name="port3" value="8300"><br>
+        地面站地址 <input type="text" name="host4" value="127.0.0.1">
+        地面站端口 <input type="text" name="port4" value="8400"><br>
+        <br>
+        <input type="submit" value="配置后点击按钮"><br>
+        串口配置状态： {{flag}}
+    </form>
+  </div>
+
+
+  <div id="nav">
+  <h2>航迹规划：请选择五个航点</h2>
+  <table align="center">
+    <tr>
+      <th>航点数</th>
+      <th>经度</th>
+      <th>纬度</th>
+    </tr>
+      <tr>
+      <td id="1">1</td>
+      <td id="x1"></td>
+      <td id="y1"></td>
+    </tr>
+    <tr>
+      <td id="2">2</td>
+      <td id="x2"></td>
+      <td id="y2"></td>
+    </tr>
+      <tr>
+      <td id="3">3</td>
+      <td id="x3"></td>
+      <td id="y3"></td>
+    </tr>
+      <tr>
+      <td id="4">4</td>
+      <td id="x4"></td>
+      <td id="y4"></td>
+    </tr>
+      <tr>
+      <td id="5">5</td>
+      <td id="x5"></td>
+      <td id="y5"></td>
+    </tr>
+  </table>
+
+      <button type="button" onclick="downFlie()">下载</button>
+      <button id="capture">拍照</button>
+      <hr>
+      <button type="button" id="send-my-url-to-django-button" >将航点信息发送给无人机</button>
+  </div>
+  <canvas id="canvas" width="480" height="320"></canvas>
+
+
+
+
+</body>
+
+<script type="text/javascript">
+	// 当前经纬度
+	var map_x = 120.695295;
+	var map_y = 36.368105;
+    //标志位是不是第一个点，用于画直线，如果是第一个点那么就不画线，如果不是就画线
+    var flag = 0
+    //临时变量用于存放上一个经纬度点，用于画线
+    var tempX = 0
+    var tempY = 0
+    //数组用于存放x坐标和y坐标，用于最后输出txt
+    var posX = new Array()
+    var posY = new Array()
+    //记录获取几个航点
+    var count = 1;
+    //用于txt文件输出的json变量
+    var jsonObj = {
+        X:posX,
+        Y:posY
+    }
+    window.jsonObj = jsonObj
+
+    //创建和初始化地图函数：
+    function initMap(){
+        createMap();//创建地图
+        setMapEvent();//设置地图事件
+        addMapControl();//向地图添加控件
+    }
+
+    //创建地图函数：
+    function createMap(){
+        var map = new BMap.Map("dituContent");//在百度地图容器中创建一个地图
+        var point = new BMap.Point(map_x,map_y);//定义一个中心点坐标
+        map.centerAndZoom(point,14);//设定地图的中心点和坐标并将地图显示在地图容器中
+        window.map = map;//将map变量存储在全局
+		map.addEventListener("click", getXy);//点击地图获取坐标
+    }
+
+    //地图事件设置函数：
+    function setMapEvent(){
+        map.enableDragging();//启用地图拖拽事件，默认启用(可不写)
+        map.enableScrollWheelZoom();//启用地图滚轮放大缩小
+        map.enableDoubleClickZoom();//启用鼠标双击放大，默认启用(可不写)
+        map.enableKeyboard();//启用键盘上下左右键移动地图
+    }
+
+    //地图控件添加函数：
+    function addMapControl(){
+        //向地图中添加缩放控件
+	var ctrl_nav = new BMap.NavigationControl({anchor:BMAP_ANCHOR_TOP_LEFT,type:BMAP_NAVIGATION_CONTROL_SMALL});
+	map.addControl(ctrl_nav);
+        //向地图中添加缩略图控件
+	var ctrl_ove = new BMap.OverviewMapControl({anchor:BMAP_ANCHOR_BOTTOM_RIGHT,isOpen:0});
+	map.addControl(ctrl_ove);
+        //向地图中添加比例尺控件
+	var ctrl_sca = new BMap.ScaleControl({anchor:BMAP_ANCHOR_TOP_RIGHT});
+	map.addControl(ctrl_sca);
+    }
+
+    function getXy(e){
+        //首先获取点击点的经度和纬度信息存放在x,y变量中
+        var x = e.point.lng
+        var y = e.point.lat
+        //注意这里window.x指的是把x设置为全局变量，便于其他函数调用
+        window.x = x
+        window.y = y
+        //把x,y存入posX数组，posY数组便于输出txt
+        posX.push(x)
+        posY.push(y)
+
+        //flag=0时，点击了第一个点，这个时候不用画线
+        if(flag==1){
+          //画直线 第一个点是tempX,tempY 第二个点是x,y
+          var polyline = new BMap.Polyline([new BMap.Point(tempX, tempY),new BMap.Point(x,y),],
+            {strokeColor:"blue", strokeWeight:2, strokeOpacity:0.5});
+          map.addOverlay(polyline);
+        }
+        //把获取的x,y存到临时变量tempX,tempY里面存起来，把flag置为1
+        tempX = x
+        tempY = y
+        flag=1
+
+        //把x,y存入points变量，调用addMarker画点
+        var points = [{"lng":x,"lat":y}];
+        window.points = points
+        addMarker(points)
+        alert(e.point.lng + ", " + e.point.lat);
+        loadXMLDoc(count)
+        count=count+1
+
+}
+
+    //创建标注点并添加到地图中
+
+    function addMarker(points) {
+
+        //循环建立标注点
+
+        for(var i=0, pointsLen = points.length; i<pointsLen; i++) {
+
+            var point = new BMap.Point(points[i].lng, points[i].lat); //将标注点转化成地图上的点
+
+            var marker = new BMap.Marker(point); //将点转化成标注点
+
+            map.addOverlay(marker);  //将标注点添加到地图上
+
+        }
+
+    }
+
+
+    initMap();//创建和初始化地图
+
+
+    //该函数用于在网页上显示经纬度信息
+    function loadXMLDoc(a)
+    {
+        var xmlhttp;
+        if (window.XMLHttpRequest)
+        {
+            //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+            xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {
+            // IE6, IE5 浏览器执行代码
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("x"+a).innerHTML=x;
+                document.getElementById("y"+a).innerHTML=y;
+            }
+        }
+
+        xmlhttp.open("GET","",true);
+        xmlhttp.send();
+    }
+
+
+    function downFlie() {
+      // 创建a标签
+      var elementA = document.createElement('a');
+
+      //文件的名称为时间戳加文件名后缀
+      elementA.download = +new Date() + ".txt";
+      elementA.style.display = 'none';
+
+      //生成一个blob二进制数据，内容为json数据
+      var blob = new Blob([JSON.stringify(jsonObj)]);
+
+      //生成一个指向blob的URL地址，并赋值给a标签的href属性
+      elementA.href = URL.createObjectURL(blob);
+      document.body.appendChild(elementA);
+      elementA.click();
+      document.body.removeChild(elementA);
+    }
+
+    $(document).ready(function() {
+        $("#send-my-url-to-django-button").click(function() {
+            $.ajax({
+                url: "process/",
+                type: "POST",
+
+                data: {
+                    posx1: posX[0],
+                    posy1: posY[0],
+                    posx2: posX[1],
+                    posy2: posY[1],
+                    posx3: posX[2],
+                    posy3: posY[2],
+                    posx4: posX[3],
+                    posy4: posY[3],
+                    posx5: posX[4],
+                    posy5: posY[4],
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                success : function(json) {
+                    alert("Successfully sent the URL to Django");
+                },
+                error : function(xhr,errmsg,err) {
+                    alert("error")
+                }
+            });
+        });
+    });
+
+
+
+
+    //访问用户媒体设备的兼容方法
+    function getUserMedia(constraints, success, error) {
+      if (navigator.mediaDevices.getUserMedia) {
+        //最新的标准API
+        navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
+      } else if (navigator.webkitGetUserMedia) {
+        //webkit核心浏览器
+        navigator.webkitGetUserMedia(constraints,success, error)
+      } else if (navigator.mozGetUserMedia) {
+        //firfox浏览器
+        navigator.mozGetUserMedia(constraints, success, error);
+      } else if (navigator.getUserMedia) {
+        //旧版API
+        navigator.getUserMedia(constraints, success, error);
+      }
+    }
+
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let context = canvas.getContext('2d');
+
+    function success(stream) {
+      //兼容webkit核心浏览器
+      let CompatibleURL = window.URL || window.webkitURL;
+      //将视频流设置为video元素的源
+      console.log(stream);
+
+      //video.src = CompatibleURL.createObjectURL(stream);
+      video.srcObject = stream;
+      video.play();
+    }
+
+    function error(error) {
+      console.log(`访问用户媒体设备失败${error.name}, ${error.message}`);
+    }
+
+    if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+      //调用用户媒体设备, 访问摄像头
+      getUserMedia({video : {width: 480, height: 320}}, success, error);
+    } else {
+      alert('不支持访问用户媒体');
+    }
+
+    document.getElementById('capture').addEventListener('click', function () {
+      context.drawImage(video, 0, 0, 480, 320);
+    })
+  </script>
+ <script type="text/javascript">
+        function show1(){
+            window.open("{% url 'show1' %}",'newwindow','height=400,width=1200');}
+    </script>
+    <script type="text/javascript">
+        function select1(){
+            window.open("{% url 'select1' %}",'newwindow','height=400,width=1200');}
+    </script>
+    <script type="text/javascript">
+        function newest1(){
+            window.open("{% url 'newest1' %}",'newwindow','height=400,width=1200');}
+    </script>
+
+ <script type="text/javascript">
+        function show2(){
+            window.open("{% url 'show2' %}",'newwindow','height=400,width=1200');}
+    </script>
+    <script type="text/javascript">
+        function select2(){
+            window.open("{% url 'select2' %}",'newwindow','height=400,width=1200');}
+    </script>
+    <script type="text/javascript">
+        function newest2(){
+            window.open("{% url 'newest2' %}",'newwindow','height=400,width=1200');}
+    </script>
+    <script>
+    <!--AJAX轮询，每隔1s发送一个AJAX请求给recvdata-->
+        $(document).ready(function(){
+            $("#recv1").click(function(){
+                document.getElementById("recv1").setAttribute("disabled", true);
+                document.getElementById("recv1").innerHTML="数据正在接收中,请等待AJAX初始化完毕";
+                setInterval(function () {
+                $.get("/recvdata1/", function(ret) {
+                    $('#data').html(ret)
+                    })},1000)
+            });
+           });
+    </script>
+    <script>
+    <!--AJAX轮询，每隔1s发送一个AJAX请求给recvdata-->
+        $(document).ready(function(){
+            $("#recv2").click(function(){
+                document.getElementById("recv2").setAttribute("disabled", true);
+                document.getElementById("recv2").innerHTML="数据正在接收中,请等待AJAX初始化完毕";
+                setInterval(function () {
+                $.get("/recvdata2/", function(ret) {
+                    $('#data1').html(ret)
+                    })},1000)
+            });
+           });
+    </script>
+
+
+</html>

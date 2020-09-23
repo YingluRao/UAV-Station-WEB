@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>显示界面</title>
+</head>
+<body>
+<table width=100% height="150" align="center" border="2" bordercolor=black
+            cellspacing="10" cellpadding="10" >
+    <th align="center">序号</th>
+    <th align="center">位置</th>
+    <th align="center">时间</th>
+    <th align="center">温度</th>
+    {% for k in data %}
+        <tr>
+            {% for j in k %}
+                    <td align="center" style="font-weight:bold">{{ j }}</td>
+            {% endfor %}
+        <tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>
